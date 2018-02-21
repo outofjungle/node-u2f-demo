@@ -3,7 +3,7 @@
 const Path = require('path');
 const Hapi = require('hapi');
 const fs = require('fs');
-const device = require('./device');
+const device = require('./lib/device');
 
 let db = device.dbInit(':memory:');
 

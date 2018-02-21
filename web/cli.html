@@ -110,17 +110,6 @@
 <script>
     var cliExports = {};
     $(document).ready(function() {
-        function displayResponse(input, result) {
-            $('#cli').val('');
-            $('#console')
-                .find('tr:last')
-                .before('<tr id="hist"><td class="prompt"><p><span id="ps1">~</span>></p></td><td><p>' + input + '</p></td></tr>');
-            if (result.length > 0) {
-                $('#console')
-                    .find('tr:last')
-                    .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p>' + result + '</p></td></tr>');
-            }
-        }
 
         function tableify(data) {
           var table  = '';
@@ -136,6 +125,18 @@
             table = table + '</tbody></table>';
           }
           return table;
+        }
+
+        function displayResponse(input, result) {
+            $('#cli').val('');
+            $('#console')
+                .find('tr:last')
+                .before('<tr id="hist"><td class="prompt"><p><span id="ps1">~</span>></p></td><td><p>' + input + '</p></td></tr>');
+            if (result.length > 0) {
+                $('#console')
+                    .find('tr:last')
+                    .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p>' + result + '</p></td></tr>');
+            }
         }
 
         function clear() {
@@ -160,12 +161,15 @@
         }
 
 
-        function serverError(data) {
+        function serverError(input) {
+          return function(data) {
           console.log(data);
-          alert('Server error code ' + data.status + ': ' + data.responseText);
+            let error = 'Server error code ' + data.status + ': ' + data.responseText;
+            displayResponse(input, error);
+          }
         }
 
-        function checkError(resp) {
+        function checkError(input, resp) {
           if (!('errorCode' in resp)) {
             return false;
           }
@@ -182,7 +186,7 @@
             msg += ': ' + resp.errorMessage;
           }
           console.log(msg);
-          alert(msg);
+          displayResponse(input, msg);
           return true;
         }
 
@@ -193,14 +197,14 @@
             console.log(req);
             u2f.register(req.appId, [req], [], function(resp) {
               console.log(resp);
-              if (checkError(resp)) {
+              if (checkError(input, resp)) {
                 return;
               }
               $.post(path, resp).success(function() {
                 displayResponse(input, 'success');
-              }).fail(serverError);
+              }).fail(serverError(input));
             });
-          }).fail(serverError);
+          }).fail(serverError(input));
         }
 
         function auth(input, deviceName) {
@@ -209,14 +213,14 @@
             console.log(req);
             u2f.sign(req.appId, req.challenge, [req], function(resp) {
               console.log(resp);
-              if (checkError(resp)) {
+              if (checkError(input, resp)) {
                 return;
               }
               $.post(path, resp).success(function() {
                 displayResponse(input, 'success');
-              }).fail(serverError);
+              }).fail(serverError(input));
             });
-          }).fail(serverError);
+          }).fail(serverError(input));
         }
 
         function listDevices(input) {
@@ -239,7 +243,7 @@
         $('#cli').keypress(function(e) {
             if (e.which == 13) {
                 var input = e.target.value.toLowerCase();
-                var regex = new RegExp(/([a-zA-Z]*)\s*(.*)/);
+                var regex = new RegExp(/([a-zA-Z]*)\s*([a-zA-Z0-9_]*)\s*/);
                 var match = regex.exec(input);
                 var cmd = match[1];
                 var param = match[2];
