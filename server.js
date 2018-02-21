@@ -3,31 +3,14 @@
 const Path = require('path');
 const Hapi = require('hapi');
 const fs = require('fs');
-const user = require('./user');
-const sqlite3 = require('sqlite3').verbose();
+const device = require('./device');
 
-let options = {
-    storeBlank: false,
-    cookieOptions: {
-        password: 'INSECUREINSECUREINSECUREINSECUREINSECUREINSECURE',
-        isSecure: true
-    }
-};
+let db = device.dbInit(':memory:');
 
 var tls = {
   key: fs.readFileSync('./etc/insecure-key.pem'),
   cert: fs.readFileSync('./etc/insecure-certificate.pem')
 };
-
-var sql = `CREATE TABLE IF NOT EXISTS u2f (
-  user TEXT PRIMARY KEY,
-  keyHandle TEXT,
-  publicKey TEXT,
-  certificate BLOB
-)`;
-
-let db = new sqlite3.Database(':memory:');
-db.run(sql);
 
 const server = Hapi.server({
     host: 'localhost',
@@ -48,6 +31,13 @@ process.on('SIGINT', function () {
 })
 
 const provision = async () => {
+    let options = {
+        storeBlank: false,
+        cookieOptions: {
+            password: 'INSECUREINSECUREINSECUREINSECUREINSECUREINSECURE',
+            isSecure: true
+        }
+    };
 
     await server.register(require('inert'));
     await server.register({
@@ -64,41 +54,34 @@ const provision = async () => {
     });
 
     server.route({
-      method: 'POST',
-      path: '/users',
-      handler: user.addUser(db)
-    });
-
-    server.route({
       method: 'GET',
-      path: '/users',
-      handler: user.listUsers(db)
+      path: '/devices',
+      handler: device.listDevices(db)
     });
 
     server.route({
         method: 'GET',
-        path: '/register/user',
-        handler: user.registerRequest(db)
+        path: '/devices/{device}/register',
+        handler: device.registerRequest(db)
     });
 
     server.route({
         method: 'POST',
-        path: '/register/user',
-        handler: user.registerResponse(db)
+        path: '/devices/{device}/register',
+        handler: device.registerResponse(db)
     });
 
     server.route({
         method: 'GET',
-        path: '/auth/user',
-        handler: user.authRequest(db)
+        path: '/devices/{device}/auth',
+        handler: device.authRequest(db)
     });
 
     server.route({
         method: 'POST',
-        path: '/auth/user',
-        handler: user.authResponse(db)
+        path: '/devices/{device}/auth',
+        handler: device.authResponse(db)
     });
-
 
     await server.start();
 

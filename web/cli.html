@@ -108,6 +108,7 @@
 </body>
 
 <script>
+    var cliExports = {};
     $(document).ready(function() {
         function displayResponse(input, result) {
             $('#cli').val('');
@@ -119,6 +120,22 @@
                     .find('tr:last')
                     .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p>' + result + '</p></td></tr>');
             }
+        }
+
+        function tableify(data) {
+          var table  = '';
+          if (data.length > 0) {
+            table = table + '<table><tbody>';
+            data.forEach(function(row) {
+              table = table + '<tr>';
+              row.forEach(function(column) {
+                table = table + '<td>&nbsp;' + column + '&nbsp;</td>';
+              });
+              table = table + '</tr>';
+            });
+            table = table + '</tbody></table>';
+          }
+          return table;
         }
 
         function clear() {
@@ -133,10 +150,12 @@
         }
 
         function help(input) {
-            var resp = '<table><tbody>' +
-                        '<tr><td>register</td><td>&nbsp;-&nbsp;</td><td>register new yubikey</td></tr>' +
-                        '<tr><td>auth</td><td>&nbsp;-&nbsp;</td><td>authenticate using registered yubikey</td></tr>' +
-                        '</tbody></table>';
+            helpData = [
+              ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
+              ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
+              ['list', 'list all registered yubikeys']
+            ];
+            var resp = tableify(helpData);
             displayResponse(input, resp);
         }
 
@@ -168,48 +187,51 @@
         }
 
 
-        function register(input) {
-          $.getJSON('/register/user').success(function(req) {
+        function register(input, deviceName) {
+          let path = '/devices/' + deviceName + '/register';
+          $.getJSON(path).success(function(req) {
             console.log(req);
             u2f.register(req.appId, [req], [], function(resp) {
               console.log(resp);
               if (checkError(resp)) {
                 return;
               }
-              $.post('/register/user', resp).success(function() {
+              $.post(path, resp).success(function() {
                 displayResponse(input, 'success');
               }).fail(serverError);
             });
           }).fail(serverError);
         }
 
-        function sign(input) {
-          $.getJSON('/auth/user').success(function(req) {
+        function auth(input, deviceName) {
+          let path = '/devices/' + deviceName + '/auth';
+          $.getJSON(path).success(function(req) {
             console.log(req);
             u2f.sign(req.appId, req.challenge, [req], function(resp) {
               console.log(resp);
               if (checkError(resp)) {
                 return;
               }
-              $.post('/auth/user', resp).success(function() {
+              $.post(path, resp).success(function() {
                 displayResponse(input, 'success');
               }).fail(serverError);
             });
           }).fail(serverError);
         }
 
-        function getCipher(op, input, param) {
+        function listDevices(input) {
             $.ajax({
-                type: 'POST',
-                url: '/api/' + op,
+                type: 'GET',
+                url: '/devices',
                 contentType: 'application/json',
-                data: JSON.stringify({
-                    'text': param
-                }),
                 cache: false,
-                success: function(data) {
-                    var payload = JSON.parse(data);
-                    displayResponse(input, payload.text);
+                success: function(payload) {
+                    console.log(data);
+                    var data = [];
+                    payload.forEach(function(device) {
+                      data.push([device.device]);
+                    });
+                    displayResponse(input, tableify(data));
                 }
             });
         }
@@ -229,10 +251,13 @@
                 } else if (cmd == 'help') {
                     return help(input);
                 } else if (cmd == 'register') {
-                    return register(input);
+                    return register(input, param);
                 } else if (cmd == 'auth') {
-                    return sign(input);
+                    return auth(input, param);
+                } else if (cmd == 'list') {
+                    return listDevices(input);
                 }
+
                 notFound(cmd, input);
             }
         });
