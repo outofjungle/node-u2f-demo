@@ -95,7 +95,7 @@
 <body>
     <table id="console">
         <tbody>
-            <tr>
+            <tr id="lastPrompt">
                 <td class="prompt">
                     <p><span id="ps1">~</span>></p>
                 </td>
@@ -127,7 +127,8 @@
           return table;
         }
 
-        function displayResponse(input, result) {
+        function displayResponse(input, result, finalize=true) {
+            var responseId = 'result' + Math.random().toString(36).substring(2, 15)
             $('#cli').val('');
             $('#console')
                 .find('tr:last')
@@ -135,8 +136,19 @@
             if (result.length > 0) {
                 $('#console')
                     .find('tr:last')
-                    .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p>' + result + '</p></td></tr>');
+                    .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p id="' + responseId + '">' + result + '</p></td></tr>');
             }
+            if (finalize === false) {
+              $('#lastPrompt').hide()
+            }
+            return responseId
+        }
+
+        function appendResponse(responseId, result, finalize=false) {
+          $('#' + responseId).append(result);
+          if (finalize === true) {
+            $('#lastPrompt').show()
+          }
         }
 
         function clear() {
@@ -161,15 +173,15 @@
         }
 
 
-        function serverError(input) {
+        function serverError(responseId) {
           return function(data) {
           console.log(data);
-            let error = 'Server error code ' + data.status + ': ' + data.responseText;
-            displayResponse(input, error);
+            let error = 'error<br/>server error code ' + data.status + ': ' + data.responseText;
+            appendResponse(responseId, error, true);
           }
         }
 
-        function checkError(input, resp) {
+        function checkError(responseId, resp) {
           if (!('errorCode' in resp)) {
             return false;
           }
@@ -186,41 +198,51 @@
             msg += ': ' + resp.errorMessage;
           }
           console.log(msg);
-          displayResponse(input, msg);
+          appendResponse(responseId, 'error<br/>' + msg, true);
           return true;
         }
 
 
         function register(input, deviceName) {
           let path = '/devices/' + deviceName + '/register';
+          let responseId = displayResponse(input, 'getting registeration request from ' + path + '...', false);
           $.getJSON(path).success(function(req) {
+            appendResponse(responseId, 'done<br/>');
             console.log(req);
+            appendResponse(responseId, 'waiting for touch to generate U2F credentials...');
             u2f.register(req.appId, [req], [], function(resp) {
               console.log(resp);
-              if (checkError(input, resp)) {
+              if (checkError(responseId, resp)) {
                 return;
               }
+              appendResponse(responseId, 'done<br/>');
+              appendResponse(responseId, 'posting registration response to ' + path + '...');
               $.post(path, resp).success(function() {
-                displayResponse(input, 'success');
-              }).fail(serverError(input));
+                appendResponse(responseId, 'registration successful<br/>', true);
+              }).fail(serverError(responseId));
             });
-          }).fail(serverError(input));
+          }).fail(serverError(responseId));
         }
 
         function auth(input, deviceName) {
           let path = '/devices/' + deviceName + '/auth';
+          let responseId = displayResponse(input, 'getting auth request from ' + path + '...', false);
           $.getJSON(path).success(function(req) {
+            appendResponse(responseId, 'done<br/>');
             console.log(req);
+            appendResponse(responseId, 'waiting for touch to authenticate with yubikey named "' + deviceName + '"...');
             u2f.sign(req.appId, req.challenge, [req], function(resp) {
               console.log(resp);
-              if (checkError(input, resp)) {
+              if (checkError(responseId, resp)) {
                 return;
               }
+              appendResponse(responseId, 'done<br/>');
+              appendResponse(responseId, 'posting auth response to ' + path + '...');
               $.post(path, resp).success(function() {
-                displayResponse(input, 'success');
-              }).fail(serverError(input));
+                appendResponse(responseId, 'authentication successful<br/>', true);
+              }).fail(serverError(responseId));
             });
-          }).fail(serverError(input));
+          }).fail(serverError(responseId));
         }
 
         function listDevices(input) {
