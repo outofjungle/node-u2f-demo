@@ -65,8 +65,24 @@ const provision = async () => {
 
   server.route({
     method: 'GET',
+    path: '/web/{param*}',
+    handler: {
+      directory: {
+        path: Path.join(__dirname, 'web')
+      }
+    }
+  })
+
+  server.route({
+    method: 'GET',
     path: '/devices',
     handler: Device.listDevices(db)
+  })
+
+  server.route({
+    method: 'DELETE',
+    path: '/devices/{device}',
+    handler: Device.deleteDevice(db)
   })
 
   server.route({

@@ -2,20 +2,20 @@
 <html lang="en">
 
 <head>
-    <title>U2F Terminal</title>
+    <title>U2F Shell</title>
     <link rel="shortcut icon" href="/images/favicon.ico">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Anonymous+Pro">
     <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.1/build/pure-min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
     <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script type="text/javascript" src="https://demo.yubico.com/js/u2f-api.js"></script>
+    <script src="web/u2f-api.js"></script>
 
     <style>
         body {
             background-color: black;
             color: #00FF00;
-            font-size: 25px;
+            font-size: 18px;
             font-family: 'Anonymous Pro', monospace;
             text-transform: lowercase;
             ;
@@ -35,6 +35,10 @@
             border: 0px;
             padding: 0px;
             margin: 0.2em 0em 0em 0em;
+        }
+
+        a {
+            color: #00FF00;
         }
 
         table,
@@ -93,6 +97,10 @@
 </head>
 
 <body>
+    <div id="hist" class="prompt">
+      welcome to the friendly interactive u2f shell, the code for this app is on <a href="https://github.com/outofjungle/node-u2f-demo" target="_blank">github</a><br/>
+      Please type "help" for more info on how to use the shell
+    </div>
     <table id="console">
         <tbody>
             <tr id="lastPrompt">
@@ -166,7 +174,9 @@
             helpData = [
               ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
               ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
-              ['list', 'list all registered yubikeys']
+              ['delete &lt;device-name&gt;', 'delete registered yubikey with friendly device-name'],
+              ['list', 'list all registered yubikeys'],
+              ['clear', 'clear screen']
             ];
             var resp = tableify(helpData);
             displayResponse(input, resp);
@@ -202,10 +212,9 @@
           return true;
         }
 
-
         function register(input, deviceName) {
           let path = '/devices/' + deviceName + '/register';
-          let responseId = displayResponse(input, 'getting registeration request from ' + path + '...', false);
+          let responseId = displayResponse(input, 'getting registration request from ' + path + '...', false);
           $.getJSON(path).success(function(req) {
             appendResponse(responseId, 'done<br/>');
             console.log(req);
@@ -218,7 +227,8 @@
               appendResponse(responseId, 'done<br/>');
               appendResponse(responseId, 'posting registration response to ' + path + '...');
               $.post(path, resp).success(function() {
-                appendResponse(responseId, 'registration successful<br/>', true);
+                appendResponse(responseId, 'success<br/>', false);
+                appendResponse(responseId, 'device named "' + deviceName + '" has been registered', true);
               }).fail(serverError(responseId));
             });
           }).fail(serverError(responseId));
@@ -230,7 +240,7 @@
           $.getJSON(path).success(function(req) {
             appendResponse(responseId, 'done<br/>');
             console.log(req);
-            appendResponse(responseId, 'waiting for touch to authenticate with yubikey named "' + deviceName + '"...');
+            appendResponse(responseId, 'waiting for touch to authenticate with device named "' + deviceName + '"...');
             u2f.sign(req.appId, req.challenge, [req], function(resp) {
               console.log(resp);
               if (checkError(responseId, resp)) {
@@ -239,7 +249,8 @@
               appendResponse(responseId, 'done<br/>');
               appendResponse(responseId, 'posting auth response to ' + path + '...');
               $.post(path, resp).success(function() {
-                appendResponse(responseId, 'authentication successful<br/>', true);
+                appendResponse(responseId, 'success<br/>', false);
+                appendResponse(responseId, 'device named "' + deviceName + '" has been authenticated', true);
               }).fail(serverError(responseId));
             });
           }).fail(serverError(responseId));
@@ -262,6 +273,22 @@
             });
         }
 
+        function deleteDevice(input, deviceName) {
+          $.ajax({
+              type: 'DELETE',
+              url: '/devices/' + deviceName,
+              contentType: 'application/json',
+              cache: false,
+              success: function() {
+                  displayResponse(input, 'device named "' + deviceName + '" has been deleted');
+              },
+              error: function(request, status, error) {
+                  displayResponse(input, request.responseText);
+              },
+          });
+        }
+
+
         $('#cli').keypress(function(e) {
             if (e.which == 13) {
                 var input = e.target.value.toLowerCase();
@@ -280,6 +307,8 @@
                     return register(input, param);
                 } else if (cmd == 'auth') {
                     return auth(input, param);
+                } else if (cmd == 'delete') {
+                    return deleteDevice(input, param);
                 } else if (cmd == 'list') {
                     return listDevices(input);
                 }
