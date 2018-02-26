@@ -2,345 +2,352 @@
 <html lang="en">
 
 <head>
-    <title>U2F Shell</title>
-    <link rel="shortcut icon" href="/images/favicon.ico">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Anonymous+Pro">
-    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.1/build/pure-min.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-    <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
-    <script src="web/u2f-api.js"></script>
+  <title>U2F Shell</title>
+  <link rel="shortcut icon" href="/images/favicon.ico">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Anonymous+Pro">
+  <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.1/build/pure-min.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+  <script src="//code.jquery.com/jquery-1.11.2.min.js"></script>
+  <script src="web/u2f-api.js"></script>
 
-    <style>
-        body {
-            background-color: black;
-            color: #00FF00;
-            font-size: 18px;
-            font-family: 'Anonymous Pro', monospace;
-            text-transform: lowercase;
-            ;
-        }
+  <style>
+    body {
+      background-color: black;
+      color: #00FF00;
+      font-size: 18px;
+      font-family: 'Anonymous Pro', monospace;
+      text-transform: lowercase;
+    }
 
-        .prompt {
-            padding-left: 0.2em;
-            padding-right: 0.2em;
-            font-weight: bold;
-        }
+    .prompt {
+      padding-left: 0.2em;
+      padding-right: 0.2em;
+      font-weight: bold;
+    }
 
-        span#ps1 {
-            color: white;
-        }
+    span#ps1 {
+      color: white;
+    }
 
-        p {
-            border: 0px;
-            padding: 0px;
-            margin: 0.2em 0em 0em 0em;
-        }
+    p {
+      border: 0px;
+      padding: 0px;
+      margin: 0.2em 0em 0em 0em;
+    }
 
-        a {
-            color: #00FF00;
-        }
+    a {
+      color: #00FF00;
+    }
 
-        table,
-        th,
-        td {
-            border: 0px solid black;
-        }
+    table,
+    th,
+    td {
+      border: 0px solid black;
+    }
 
-        text:focus,
-        input:focus {
-            outline: none;
-        }
+    text:focus,
+    input:focus {
+      outline: none;
+    }
 
-        input[type=text] {
-            width: 90%;
-            border: 0px solid green;
-            border-radius: 0px;
-            background-color: transparent;
-            text-transform: lowercase;
-        }
+    input[type=text] {
+      width: 90%;
+      border: 0px solid green;
+      border-radius: 0px;
+      background-color: transparent;
+      text-transform: lowercase;
+    }
 
-         ::-webkit-input-placeholder {
-            color: green;
-        }
+    ::-webkit-input-placeholder {
+      color: green;
+    }
 
-         :-moz-placeholder {
-            color: green;
-            opacity: 1;
-        }
+    :-moz-placeholder {
+      color: green;
+      opacity: 1;
+    }
 
-         ::-moz-placeholder {
-            color: green;
-            opacity: 1;
-        }
+    ::-moz-placeholder {
+      color: green;
+      opacity: 1;
+    }
 
-         :-ms-input-placeholder {
-            color: green;
-        }
+    :-ms-input-placeholder {
+      color: green;
+    }
 
-        input:focus::-webkit-input-placeholder {
-            color: transparent;
-        }
+    input:focus::-webkit-input-placeholder {
+      color: transparent;
+    }
 
-        input:focus:-moz-placeholder {
-            color: transparent;
-        }
+    input:focus:-moz-placeholder {
+      color: transparent;
+    }
 
-        input:focus::-moz-placeholder {
-            color: transparent;
-        }
+    input:focus::-moz-placeholder {
+      color: transparent;
+    }
 
-        input:focus:-ms-input-placeholder {
-            color: transparent;
-        }
-    </style>
+    input:focus:-ms-input-placeholder {
+      color: transparent;
+    }
+  </style>
 </head>
 
 <body>
-    <div id="hist" class="prompt">
-      welcome to the friendly interactive u2f shell, the code for this app is on <a href="https://github.com/outofjungle/node-u2f-demo" target="_blank">github</a><br/>
-      Please type "help" for more info on how to use the shell
-    </div>
-    <table id="console">
-        <tbody>
-            <tr id="lastPrompt">
-                <td class="prompt">
-                    <p><span id="ps1">~</span>></p>
-                </td>
-                <td>
-                    <p><input placeholder="|" type="text" name="cli" id="cli"></p>
-                </td>
-            </tr>
-        </tbody>
-    </table>
+  <div id="hist" class="prompt">
+    welcome to the friendly interactive u2f shell, the code for this app is on <a href="https://github.com/outofjungle/node-u2f-demo" target="_blank">github</a><br/> Please type "help" for more info on how to use the shell
+  </div>
+  <table id="console">
+    <tbody>
+      <tr id="lastPrompt">
+        <td class="prompt">
+          <p><span id="ps1">~</span>></p>
+        </td>
+        <td>
+          <p><input placeholder="|" type="text" name="cli" id="cli"></p>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </body>
 
 <script>
-    var cliExports = {};
-    $(document).ready(function() {
+  var cliExports = {}
+  $(document).ready(function() {
 
-        function tableify(data) {
-          var table  = '';
-          if (data.length > 0) {
-            table = table + '<table><tbody>';
-            data.forEach(function(row) {
-              table = table + '<tr>';
-              row.forEach(function(column) {
-                table = table + '<td>&nbsp;' + column + '&nbsp;</td>';
-              });
-              table = table + '</tr>';
-            });
-            table = table + '</tbody></table>';
-          }
-          return table;
+    function xhrcall(url, method = 'GET', payload = '') {
+      console.log(method, url, payload)
+      return $.ajax({
+        type: method,
+        url: url,
+        data: payload,
+        cache: false
+      })
+    }
+
+    function tableify(data) {
+      var table = ''
+      if (data.length > 0) {
+        table = table + '<table><tbody>'
+        data.forEach(function(row) {
+          table = table + '<tr>'
+          row.forEach(function(column) {
+            table = table + '<td>&nbsp;' + column + '&nbsp;</td>'
+          })
+          table = table + '</tr>'
+        })
+        table = table + '</tbody></table>'
+      }
+      return table
+    }
+
+    function displayResponse(input, result, finalize = true) {
+      var displayId = 'result' + Math.random().toString(36).substring(2, 15)
+      $('#cli').val('')
+      $('#console')
+        .find('tr:last')
+        .before('<tr id="hist"><td class="prompt"><p><span id="ps1">~</span>></p></td><td><p>' + input + '</p></td></tr>')
+      if (result.length > 0) {
+        $('#console')
+          .find('tr:last')
+          .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p id="' + displayId + '">' + result + '</p></td></tr>')
+      }
+      if (finalize === false) {
+        $('#lastPrompt').hide()
+      }
+      return displayId
+    }
+
+    function appendResponse(displayId, result, finalize = false) {
+      $('#' + displayId).append(result)
+      if (finalize === true) {
+        $('#lastPrompt').show()
+      }
+    }
+
+    function clear() {
+      $('#cli').val('')
+      var erase = document.querySelectorAll("#hist")
+      $(erase).remove()
+    }
+
+    function notFound(cmd, input) {
+      var resp = 'unknown command "' + cmd + '". please type "help".'
+      displayResponse(input, resp)
+    }
+
+    function help(input) {
+      helpData = [
+        ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
+        ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
+        ['delete &lt;device-name&gt;', 'delete registered yubikey with friendly device-name'],
+        ['list', 'list all registered yubikeys'],
+        ['clear', 'clear screen']
+      ]
+      var resp = tableify(helpData)
+      displayResponse(input, resp)
+    }
+
+
+    function httpError(displayId) {
+      return function(data) {
+        appendResponse(displayId, 'error<br/>', true)
+        appendResponse(displayId, 'http error: ' + data.status + ' - ' + data.responseText, true)
+      }
+    }
+
+    function getError(u2fdata) {
+      if (!('errorCode' in u2fdata)) {
+        return false
+      }
+      if (u2fdata.errorCode === u2f.ErrorCodes['OK']) {
+        return false
+      }
+
+      var msg = 'u2f error: '
+      for (name in u2f.ErrorCodes) {
+        if (u2f.ErrorCodes[name] === u2fdata.errorCode) {
+          msg = msg + name
         }
+      }
+      return new Error(msg)
+    }
 
-        function displayResponse(input, result, finalize=true) {
-            var responseId = 'result' + Math.random().toString(36).substring(2, 15)
-            $('#cli').val('');
-            $('#console')
-                .find('tr:last')
-                .before('<tr id="hist"><td class="prompt"><p><span id="ps1">~</span>></p></td><td><p>' + input + '</p></td></tr>');
-            if (result.length > 0) {
-                $('#console')
-                    .find('tr:last')
-                    .before('<tr id="hist"><td><p>&nbsp;</p></td><td><p id="' + responseId + '">' + result + '</p></td></tr>');
+    function register(input, deviceName) {
+      let url = '/devices/' + deviceName + '/register'
+      let displayId = displayResponse(input, 'getting registration request from ' + url + '...', false)
+
+      xhrcall(url, 'GET')
+        .then(function(payload) {
+          appendResponse(displayId, 'done<br/>')
+          appendResponse(displayId, 'waiting for touch to generate U2F credentials...')
+
+          u2f.register(payload.appId, [payload], [], function(regResp) {
+            if (error = getError(regResp)) {
+              appendResponse(displayId, 'error<br/>', true)
+              return appendResponse(displayId, error.message, true)
             }
-            if (finalize === false) {
-              $('#lastPrompt').hide()
+
+            appendResponse(displayId, 'done<br/>')
+            appendResponse(displayId, 'posting registration response to ' + url + '...')
+            return xhrcall(url, 'POST', regResp)
+              .then(function() {
+                appendResponse(displayId, 'success<br/>', false)
+                appendResponse(displayId, 'device named "' + deviceName + '" has been registered', true)
+              })
+              .fail(httpError(displayId))
+          })
+        })
+        .fail(httpError(displayId))
+    }
+
+    function auth(input, deviceName) {
+      let url = '/devices/' + deviceName + '/auth'
+      let displayId = displayResponse(input, 'getting auth request from ' + url + '...', false)
+
+      xhrcall(url, 'GET')
+        .then(function(payload) {
+          appendResponse(displayId, 'done<br/>')
+          appendResponse(displayId, 'waiting for touch to authenticate with device named "' + deviceName + '"...')
+
+          u2f.sign(payload.appId, payload.challenge, [payload], function(authResp) {
+            if (error = getError(authResp)) {
+              appendResponse(displayId, 'error<br/>', true)
+              return appendResponse(displayId, error.message, true)
             }
-            return responseId
+
+            appendResponse(displayId, 'done<br/>')
+            appendResponse(displayId, 'posting auth response to ' + url + '...')
+            return xhrcall(url, 'POST', authResp)
+              .then(function() {
+                appendResponse(displayId, 'success<br/>', false)
+                appendResponse(displayId, 'device named "' + deviceName + '" has been authenticated', true)
+              })
+              .fail(httpError(displayId))
+          })
+        })
+        .fail(httpError(displayId))
+    }
+
+    function listDevices(input) {
+      let url = '/devices'
+      xhrcall(url, 'GET')
+        .done(function(payload) {
+          var data = []
+          payload.forEach(function(device) {
+            data.push(['device:', device.device])
+          })
+          displayResponse(input, tableify(data))
+        })
+        .fail(httpError(displayId))
+    }
+
+    function deleteDevice(input, deviceName) {
+      let url = '/devices/' + deviceName
+      xhrcall(url, 'DELETE')
+        .done(function() {
+          displayResponse(input, 'device named "' + deviceName + '" has been deleted')
+        })
+        .fail(function(payload) {
+          displayResponse(input, payload.responseText)
+        })
+    }
+
+
+    $('#cli').keypress(function(e) {
+      if (e.which == 13) {
+        var input = e.target.value.toLowerCase()
+        var regex = new RegExp(/([a-zA-Z]*)\s*([a-zA-Z0-9_]*)\s*/)
+        var match = regex.exec(input)
+        var cmd = match[1]
+        var param = match[2]
+
+        if (input == '') {
+          return displayResponse(input, '')
+        } else if (cmd == 'clear') {
+          return clear()
+        } else if (cmd == 'help') {
+          return help(input)
+        } else if (cmd == 'register') {
+          return register(input, param)
+        } else if (cmd == 'auth') {
+          return auth(input, param)
+        } else if (cmd == 'delete') {
+          return deleteDevice(input, param)
+        } else if (cmd == 'list') {
+          return listDevices(input)
         }
 
-        function appendResponse(responseId, result, finalize=false) {
-          $('#' + responseId).append(result);
-          if (finalize === true) {
-            $('#lastPrompt').show()
-          }
+        notFound(cmd, input)
+      }
+    })
+
+    function blinky_cursor() {
+      if ($('input[name="cli"]').attr('placeholder')) {
+        $('input[name="cli"]').attr('placeholder', '')
+      } else {
+        $('input[name="cli"]').attr('placeholder', '|')
+      }
+      setTimeout(blinky_cursor, 500)
+    }
+
+    $(function() {
+      if ($('#cli').is(':focus') == false) {
+        blinky_cursor()
+      }
+    })
+
+    $('body').on('keydown', function(e) {
+      if (!(e.metaKey || e.ctrlKey)) {
+        var input = $('input[name="cli"]')
+        if (!input.is(':focus')) {
+          input.focus()
         }
-
-        function clear() {
-            $('#cli').val('');
-            var erase = document.querySelectorAll("#hist");
-            $(erase).remove();
-        }
-
-        function notFound(cmd, input) {
-            var resp = 'unknown command "' + cmd + '". please type "help".';
-            displayResponse(input, resp);
-        }
-
-        function help(input) {
-            helpData = [
-              ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
-              ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
-              ['delete &lt;device-name&gt;', 'delete registered yubikey with friendly device-name'],
-              ['list', 'list all registered yubikeys'],
-              ['clear', 'clear screen']
-            ];
-            var resp = tableify(helpData);
-            displayResponse(input, resp);
-        }
-
-
-        function serverError(responseId) {
-          return function(data) {
-          console.log(data);
-            let error = 'error<br/>server error code ' + data.status + ': ' + data.responseText;
-            appendResponse(responseId, error, true);
-          }
-        }
-
-        function checkError(responseId, resp) {
-          if (!('errorCode' in resp)) {
-            return false;
-          }
-          if (resp.errorCode === u2f.ErrorCodes['OK']) {
-            return false;
-          }
-          var msg = 'U2F error code ' + resp.errorCode;
-          for (name in u2f.ErrorCodes) {
-            if (u2f.ErrorCodes[name] === resp.errorCode) {
-              msg += ' (' + name + ')';
-            }
-          }
-          if (resp.errorMessage) {
-            msg += ': ' + resp.errorMessage;
-          }
-          console.log(msg);
-          appendResponse(responseId, 'error<br/>' + msg, true);
-          return true;
-        }
-
-        function register(input, deviceName) {
-          let path = '/devices/' + deviceName + '/register';
-          let responseId = displayResponse(input, 'getting registration request from ' + path + '...', false);
-          $.getJSON(path).success(function(req) {
-            appendResponse(responseId, 'done<br/>');
-            console.log(req);
-            appendResponse(responseId, 'waiting for touch to generate U2F credentials...');
-            u2f.register(req.appId, [req], [], function(resp) {
-              console.log(resp);
-              if (checkError(responseId, resp)) {
-                return;
-              }
-              appendResponse(responseId, 'done<br/>');
-              appendResponse(responseId, 'posting registration response to ' + path + '...');
-              $.post(path, resp).success(function() {
-                appendResponse(responseId, 'success<br/>', false);
-                appendResponse(responseId, 'device named "' + deviceName + '" has been registered', true);
-              }).fail(serverError(responseId));
-            });
-          }).fail(serverError(responseId));
-        }
-
-        function auth(input, deviceName) {
-          let path = '/devices/' + deviceName + '/auth';
-          let responseId = displayResponse(input, 'getting auth request from ' + path + '...', false);
-          $.getJSON(path).success(function(req) {
-            appendResponse(responseId, 'done<br/>');
-            console.log(req);
-            appendResponse(responseId, 'waiting for touch to authenticate with device named "' + deviceName + '"...');
-            u2f.sign(req.appId, req.challenge, [req], function(resp) {
-              console.log(resp);
-              if (checkError(responseId, resp)) {
-                return;
-              }
-              appendResponse(responseId, 'done<br/>');
-              appendResponse(responseId, 'posting auth response to ' + path + '...');
-              $.post(path, resp).success(function() {
-                appendResponse(responseId, 'success<br/>', false);
-                appendResponse(responseId, 'device named "' + deviceName + '" has been authenticated', true);
-              }).fail(serverError(responseId));
-            });
-          }).fail(serverError(responseId));
-        }
-
-        function listDevices(input) {
-            $.ajax({
-                type: 'GET',
-                url: '/devices',
-                contentType: 'application/json',
-                cache: false,
-                success: function(payload) {
-                    console.log(data);
-                    var data = [];
-                    payload.forEach(function(device) {
-                      data.push([device.device]);
-                    });
-                    displayResponse(input, tableify(data));
-                }
-            });
-        }
-
-        function deleteDevice(input, deviceName) {
-          $.ajax({
-              type: 'DELETE',
-              url: '/devices/' + deviceName,
-              contentType: 'application/json',
-              cache: false,
-              success: function() {
-                  displayResponse(input, 'device named "' + deviceName + '" has been deleted');
-              },
-              error: function(request, status, error) {
-                  displayResponse(input, request.responseText);
-              },
-          });
-        }
-
-
-        $('#cli').keypress(function(e) {
-            if (e.which == 13) {
-                var input = e.target.value.toLowerCase();
-                var regex = new RegExp(/([a-zA-Z]*)\s*([a-zA-Z0-9_]*)\s*/);
-                var match = regex.exec(input);
-                var cmd = match[1];
-                var param = match[2];
-
-                if (input == '') {
-                    return displayResponse(input, '');
-                } else if (cmd == 'clear') {
-                    return clear();
-                } else if (cmd == 'help') {
-                    return help(input);
-                } else if (cmd == 'register') {
-                    return register(input, param);
-                } else if (cmd == 'auth') {
-                    return auth(input, param);
-                } else if (cmd == 'delete') {
-                    return deleteDevice(input, param);
-                } else if (cmd == 'list') {
-                    return listDevices(input);
-                }
-
-                notFound(cmd, input);
-            }
-        });
-
-        function blinky_cursor() {
-            if ($('input[name="cli"]').attr('placeholder')) {
-                $('input[name="cli"]').attr('placeholder', '');
-            } else {
-                $('input[name="cli"]').attr('placeholder', '|');
-            }
-            setTimeout(blinky_cursor, 500);
-        }
-
-        $(function() {
-            if ($('#cli').is(':focus') == false) {
-                blinky_cursor();
-            }
-        });
-
-        $('body').on('keydown', function(e) {
-            if (!(e.metaKey || e.ctrlKey)) {
-                var input = $('input[name="cli"]');
-                if (!input.is(':focus')) {
-                    input.focus();
-                }
-            }
-        });
-    });
+      }
+    })
+  })
 </script>
 
 </html>
