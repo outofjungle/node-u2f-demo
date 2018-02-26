@@ -8,8 +8,13 @@
   },
   "author": "Venkat Venkataraju (venkat.venkataraju@gmail.com)",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:outofjungle/node-u2f-demo.git"
+  },
   "dependencies": {
     "good": "^8.1.0",
+    "good-console": "^7.1.0",
     "hapi": "^17.2.0",
     "inert": "^5.1.0",
     "q": "^1.5.1",
