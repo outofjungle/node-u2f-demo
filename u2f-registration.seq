@@ -1,0 +1,25 @@
+title U2F Registration Sequence
+
+participant User
+participant Device
+participant Browser
+participant Server
+participant Datastore
+
+User->Browser: login with username, password
+Browser->Server: login with username, password
+Server->Browser: logged in
+Browser->Server: register new device
+Server->Browser: challenge
+Browser->Device: register with challenge
+Device->Device: blink
+User->Device: touch
+Device->Device: generate key pair privateKey, pubKey
+Device->Device: sign challenge as signedChallenge with privateKey
+Device->Device: wrap privateKey as keyHandle
+Device->Browser: pubKey, keyHandle, signedChallenge
+Browser->Server: pubKey, keyHandle, signedChallenge
+Server->Server: verify signedChallenge with pubKey
+Server->Datastore: store pubKey, keyHandle for username
+Datastore->Server: done
+Server->Browser: registered

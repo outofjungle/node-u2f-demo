@@ -1,0 +1,26 @@
+title U2F Authentication Sequence
+
+participant User
+participant Device
+participant Browser
+participant Server
+participant Datastore
+
+User->Browser: login with username, password
+Browser->Server: login with username, password
+Server->Server: verify password
+Server->Server: generate challenge
+Server->Datastore: get keyHandle for username
+Datastore->Server: keyHandle
+Server->Browser: keyHandle, challenge
+Browser->Device: authenticate with keyHandle, challenge
+Device->Device: blink
+User->Device: touch
+Device->Device: Unwrap privateKey from keyHandle
+Device->Device: sign challenge as signedChallenge with privateKey
+Device->Browser: signedChallenge
+Browser->Server: signedChallenge
+Server->Datastore: get pubKey for username
+Datastore->Server: pubKey
+Server->Server: verify signedChallenge with pubKey
+Server->Browser: authenticated
