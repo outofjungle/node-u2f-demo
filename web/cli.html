@@ -122,7 +122,10 @@
         type: method,
         url: url,
         data: payload,
-        cache: false
+        cache: false,
+        success: function(payload) {
+          console.log(payload)
+        }
       })
     }
 
