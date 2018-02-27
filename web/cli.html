@@ -29,6 +29,10 @@
       color: white;
     }
 
+    span#highlight {
+      color: #FFFF00;
+    }
+
     p {
       border: 0px;
       padding: 0px;
@@ -91,12 +95,13 @@
     input:focus:-ms-input-placeholder {
       color: transparent;
     }
+
   </style>
 </head>
 
 <body>
   <div id="hist" class="prompt">
-    welcome to the friendly interactive u2f shell, the code for this app is on <a href="https://github.com/outofjungle/node-u2f-demo" target="_blank">github</a><br/> Please type "help" for more info on how to use the shell
+    welcome to the friendly interactive u2f shell, the code for this app is on <a href="https://github.com/outofjungle/node-u2f-demo" target="_blank">github</a><br/> Please type <span id="highlight">help</span> for available commands
   </div>
   <table id="console">
     <tbody>
@@ -113,8 +118,118 @@
 </body>
 
 <script>
-  var cliExports = {}
   $(document).ready(function() {
+    function register(input, deviceName) {
+      let url = '/devices/' + deviceName + '/register'
+      let displayId = displayResponse(input, 'getting registration request from ' + url + '...', false)
+
+      xhrcall(url, 'GET')
+        .then(function(payload) {
+          appendResponse(displayId, 'done<br/>')
+          appendResponse(displayId, 'waiting for touch to generate U2F credentials...')
+
+          u2f.register(payload.appId, [payload], [], function(regResp) {
+            if (error = getU2FError(regResp)) {
+              appendResponse(displayId, 'error<br/>', true)
+              return appendResponse(displayId, error.message, true)
+            }
+
+            appendResponse(displayId, 'done<br/>')
+            appendResponse(displayId, 'posting registration response to ' + url + '...')
+            return xhrcall(url, 'POST', regResp)
+              .then(function() {
+                appendResponse(displayId, 'success<br/>', false)
+                appendResponse(displayId, 'device named "' + deviceName + '" has been registered', true)
+              })
+              .fail(httpError(displayId))
+          })
+        })
+        .fail(httpError(displayId))
+    }
+
+
+    function auth(input, deviceName) {
+      let url = '/devices/' + deviceName + '/auth'
+      let displayId = displayResponse(input, 'getting auth request from ' + url + '...', false)
+
+      xhrcall(url, 'GET')
+        .then(function(payload) {
+          appendResponse(displayId, 'done<br/>')
+          appendResponse(displayId, 'waiting for touch to authenticate with device named "' + deviceName + '"...')
+
+          u2f.sign(payload.appId, payload.challenge, [payload], function(authResp) {
+            if (error = getU2FError(authResp)) {
+              appendResponse(displayId, 'error<br/>', true)
+              return appendResponse(displayId, error.message, true)
+            }
+
+            appendResponse(displayId, 'done<br/>')
+            appendResponse(displayId, 'posting auth response to ' + url + '...')
+            return xhrcall(url, 'POST', authResp)
+              .then(function() {
+                appendResponse(displayId, 'success<br/>', false)
+                appendResponse(displayId, 'device named "' + deviceName + '" has been authenticated', true)
+              })
+              .fail(httpError(displayId))
+          })
+        })
+        .fail(httpError(displayId))
+    }
+
+
+    function listDevices(input) {
+      let url = '/devices'
+      let displayId = displayResponse(input, '<span/>', false)
+      xhrcall(url, 'GET')
+        .done(function(payload) {
+          var data = []
+          payload.forEach(function(device) {
+            data.push(['device:', device.device])
+          })
+          appendResponse(displayId, tableify(data), true)
+        })
+        .fail(httpError(displayId))
+    }
+
+
+    function deleteDevice(input, deviceName) {
+      let url = '/devices/' + deviceName
+      xhrcall(url, 'DELETE')
+        .done(function() {
+          displayResponse(input, 'device named "' + deviceName + '" has been deleted')
+        })
+        .fail(function(payload) {
+          displayResponse(input, payload.responseText)
+        })
+    }
+
+
+    function clear() {
+      $('#cli').val('')
+      var erase = document.querySelectorAll("#hist")
+      $(erase).remove()
+    }
+
+
+    function help(input) {
+      helpData = [
+        ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
+        ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
+        ['delete &lt;device-name&gt;', 'delete registered yubikey with friendly device-name'],
+        ['list', 'list all registered yubikeys'],
+        ['clear', 'clear screen'],
+        ['help', 'display this help']
+      ]
+      var resp = tableify(helpData)
+      displayResponse(input, resp)
+    }
+
+
+    function notFound(cmd, input) {
+      var resp = 'unknown command "' + cmd + '". please type "help".'
+      displayResponse(input, resp)
+    }
+
 
     function xhrcall(url, method = 'GET', payload = '') {
       console.log(method, url, payload)
@@ -128,6 +243,7 @@
         }
       })
     }
+
 
     function tableify(data) {
       var table = ''
@@ -144,6 +260,7 @@
       }
       return table
     }
+
 
     function displayResponse(input, result, finalize = true) {
       var displayId = 'result' + Math.random().toString(36).substring(2, 15)
@@ -162,34 +279,12 @@
       return displayId
     }
 
+
     function appendResponse(displayId, result, finalize = false) {
       $('#' + displayId).append(result)
       if (finalize === true) {
         $('#lastPrompt').show()
       }
-    }
-
-    function clear() {
-      $('#cli').val('')
-      var erase = document.querySelectorAll("#hist")
-      $(erase).remove()
-    }
-
-    function notFound(cmd, input) {
-      var resp = 'unknown command "' + cmd + '". please type "help".'
-      displayResponse(input, resp)
-    }
-
-    function help(input) {
-      helpData = [
-        ['register &lt;device-name&gt;', 'register new yubikey with friendly device-name'],
-        ['auth &lt;device-name&gt;', 'authenticate using registered yubikey with friendly device-name'],
-        ['delete &lt;device-name&gt;', 'delete registered yubikey with friendly device-name'],
-        ['list', 'list all registered yubikeys'],
-        ['clear', 'clear screen']
-      ]
-      var resp = tableify(helpData)
-      displayResponse(input, resp)
     }
 
 
@@ -200,7 +295,8 @@
       }
     }
 
-    function getError(u2fdata) {
+
+    function getU2FError(u2fdata) {
       if (!('errorCode' in u2fdata)) {
         return false
       }
@@ -217,91 +313,11 @@
       return new Error(msg)
     }
 
-    function register(input, deviceName) {
-      let url = '/devices/' + deviceName + '/register'
-      let displayId = displayResponse(input, 'getting registration request from ' + url + '...', false)
-
-      xhrcall(url, 'GET')
-        .then(function(payload) {
-          appendResponse(displayId, 'done<br/>')
-          appendResponse(displayId, 'waiting for touch to generate U2F credentials...')
-
-          u2f.register(payload.appId, [payload], [], function(regResp) {
-            if (error = getError(regResp)) {
-              appendResponse(displayId, 'error<br/>', true)
-              return appendResponse(displayId, error.message, true)
-            }
-
-            appendResponse(displayId, 'done<br/>')
-            appendResponse(displayId, 'posting registration response to ' + url + '...')
-            return xhrcall(url, 'POST', regResp)
-              .then(function() {
-                appendResponse(displayId, 'success<br/>', false)
-                appendResponse(displayId, 'device named "' + deviceName + '" has been registered', true)
-              })
-              .fail(httpError(displayId))
-          })
-        })
-        .fail(httpError(displayId))
-    }
-
-    function auth(input, deviceName) {
-      let url = '/devices/' + deviceName + '/auth'
-      let displayId = displayResponse(input, 'getting auth request from ' + url + '...', false)
-
-      xhrcall(url, 'GET')
-        .then(function(payload) {
-          appendResponse(displayId, 'done<br/>')
-          appendResponse(displayId, 'waiting for touch to authenticate with device named "' + deviceName + '"...')
-
-          u2f.sign(payload.appId, payload.challenge, [payload], function(authResp) {
-            if (error = getError(authResp)) {
-              appendResponse(displayId, 'error<br/>', true)
-              return appendResponse(displayId, error.message, true)
-            }
-
-            appendResponse(displayId, 'done<br/>')
-            appendResponse(displayId, 'posting auth response to ' + url + '...')
-            return xhrcall(url, 'POST', authResp)
-              .then(function() {
-                appendResponse(displayId, 'success<br/>', false)
-                appendResponse(displayId, 'device named "' + deviceName + '" has been authenticated', true)
-              })
-              .fail(httpError(displayId))
-          })
-        })
-        .fail(httpError(displayId))
-    }
-
-    function listDevices(input) {
-      let url = '/devices'
-      xhrcall(url, 'GET')
-        .done(function(payload) {
-          var data = []
-          payload.forEach(function(device) {
-            data.push(['device:', device.device])
-          })
-          displayResponse(input, tableify(data))
-        })
-        .fail(httpError(displayId))
-    }
-
-    function deleteDevice(input, deviceName) {
-      let url = '/devices/' + deviceName
-      xhrcall(url, 'DELETE')
-        .done(function() {
-          displayResponse(input, 'device named "' + deviceName + '" has been deleted')
-        })
-        .fail(function(payload) {
-          displayResponse(input, payload.responseText)
-        })
-    }
-
 
     $('#cli').keypress(function(e) {
       if (e.which == 13) {
         var input = e.target.value.toLowerCase()
-        var regex = new RegExp(/([a-zA-Z]*)\s*([a-zA-Z0-9_]*)\s*/)
+        var regex = new RegExp(/([a-zA-Z]*)\s*([a-zA-Z0-9-_\.]*)\s*/)
         var match = regex.exec(input)
         var cmd = match[1]
         var param = match[2]
@@ -326,6 +342,7 @@
       }
     })
 
+
     function blinky_cursor() {
       if ($('input[name="cli"]').attr('placeholder')) {
         $('input[name="cli"]').attr('placeholder', '')
@@ -335,11 +352,13 @@
       setTimeout(blinky_cursor, 500)
     }
 
+
     $(function() {
       if ($('#cli').is(':focus') == false) {
         blinky_cursor()
       }
     })
+
 
     $('body').on('keydown', function(e) {
       if (!(e.metaKey || e.ctrlKey)) {
@@ -350,6 +369,7 @@
       }
     })
   })
+
 </script>
 
 </html>

@@ -15,6 +15,14 @@ Demo web app in node.js to help developers understand how FIDO U2F works under t
     npm install
     npm start
 
+### Considerations
+  * The site should be running on a secure server (HTTPS)
+    * This demo app uses insecure certificate for local testing
+    * Heroku and GCP support both HTTP and HTTPS endpoints by default
+      * http://yubikey-u2f-demo.appspot.com will load, but key registration will fail
+    * Use [Let’s Encrypt](https://letsencrypt.org/) for valid certificates
+  * The appId should match the url the server is running on
+
 ### TL;DR
 
-We have the [demo](https://yubikey-u2f-demo.appspot.com) hosted in the cloud. Feel free to play with it.
+The code is hosted at https://yubikey-u2f-demo.appspot.com. Feel free to play with registration/authentication of yubikeys. The U2F registration data is only stored in memory and will be wiped periodically. 
