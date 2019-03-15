@@ -8,12 +8,19 @@ Demo web app in node.js to help developers understand how FIDO U2F works under t
  * [Google Chrome](https://www.google.com/chrome/browser/)
  * [YubiKey](https://www.yubico.com/product/fido-u2f-security-key/)
 
-### Run it locally
+### Install
 
     git clone https://github.com/outofjungle/node-u2f-demo.git
     cd node-u2f-demo/
     npm install
-    npm start
+
+### Run it
+
+    ./server.js
+
+By default, optional parameters `dbfile` is set to `:memory:` and `port` is set to `4443`. To change defaults, call run the script with desired options.
+
+    ./server.js --dbfile=/path/to/dbfile --port=4430
 
 ### Considerations
   * The site should be running on a secure server (HTTPS)
@@ -25,4 +32,4 @@ Demo web app in node.js to help developers understand how FIDO U2F works under t
 
 ### TL;DR
 
-The code is hosted at https://yubikey-u2f-demo.appspot.com. Feel free to play with registration/authentication of yubikeys. The U2F registration data is only stored in memory and will be wiped periodically. 
+The code is hosted at https://yubikey-u2f-demo.appspot.com. Feel free to play with registration/authentication of yubikeys. The U2F registration data is only stored in memory and will be wiped periodically.
