@@ -1,14 +1,26 @@
+#!/usr/bin/env node
+
 'use strict'
 
 const Path = require('path')
 const Hapi = require('hapi')
 const Fs = require('fs')
+const Opts = require('commander')
 const Database = require('./lib/database')
 const Device = require('./lib/device')
 
+Opts
+  .version('0.2.0')
+  .option('-d, --dbfile [dbfile]', 'database filename')
+  .option('-p, --port [port]', 'port number')
+  .parse(process.argv)
+
+var dbfile = (Opts.dbfile) ? Opts.dbfile : ':memory:'
+var port = (Opts.port) ? parseInt(Opts.port, 10) : 4443
+
 var serverOpts = {
   host: 'localhost',
-  port: 4443,
+  port: port,
   tls: {
     key: Fs.readFileSync('./etc/insecure-key.pem'),
     cert: Fs.readFileSync('./etc/insecure-certificate.pem')
@@ -31,7 +43,7 @@ if (process.env.GOOGLE_CLOUD_PROJECT) {
 }
 
 const server = Hapi.server(serverOpts)
-const db = Database.dbInit(':memory:')
+const db = Database.dbInit(dbfile)
 
 process.on('SIGINT', function () {
   server.stop({

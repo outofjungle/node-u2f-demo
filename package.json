@@ -13,6 +13,7 @@
     "url": "git@github.com:outofjungle/node-u2f-demo.git"
   },
   "dependencies": {
+    "commander": "^2.19.0",
     "good": "^8.1.2",
     "good-console": "^7.1.0",
     "hapi": "^17.8.4",
