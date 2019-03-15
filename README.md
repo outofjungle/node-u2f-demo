@@ -18,7 +18,7 @@ Demo web app in node.js to help developers understand how FIDO U2F works under t
 
     ./server.js
 
-By default, optional parameters `dbfile` is set to `:memory:` and `port` is set to `4443`. To change defaults, call run the script with desired options.
+By default, optional parameters `dbfile` is set to `:memory:` and `port` is set to `4443`. To change defaults, run the script with desired options.
 
     ./server.js --dbfile=/path/to/dbfile --port=4430
 
